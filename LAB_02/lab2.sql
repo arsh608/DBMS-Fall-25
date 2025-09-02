@@ -15,5 +15,10 @@ SELECT SUBSTR(last_name, 1, 5) AS short_last_name FROM employees;
 SELECT LPAD(first_name, 15, '*') AS padded_name FROM employees;
 SELECT LTRIM(' Oracle') AS trimmed_string FROM dual;
 SELECT INITCAP(first_name) AS proper_first_name, INITCAP(last_name) AS proper_last_name FROM employees;
-SELECT NEXT_DAY(DATE '2022-08-20', 'MONDAY') AS next_monday FROM dual;
-
+SELECT NEXT_DAY(DATE '2022-08-20', 'MONDAY   ') AS next_monday FROM dual;
+SELECT TO_CHAR(TO_DATE('10-AUG-2024', 'DD-MON-YYYY'), 'MM-YYYY') AS formatted_date FROM dual;
+SELECT DISTINCT salary FROM employees ORDER BY salary ASC;
+SELECT first_name, salary, ROUND(salary, -2) AS rounded_salary FROM employees;
+SELECT department_id, emp_count FROM (SELECT department_id, COUNT(*) AS emp_count FROM employees GROUP BY department_id ORDER BY emp_count DESC) WHERE ROWNUM = 1;
+SELECT department_id, total_salary FROM (SELECT department_id, SUM(salary) AS total_salary FROM employees GROUP BY department_id ORDER BY total_salary DESC) WHERE ROWNUM <= 3;
+--q20 same as q18 line-22
