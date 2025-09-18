@@ -1,0 +1,1 @@
+create user LAB4 identified by LAB4;
