@@ -1,0 +1,581 @@
+/*
+MongoDB Master Reference File
+Based on DB Lab 11 Manual and Practice Files
+*/
+
+/*****************************
+1. MONGODB BASICS & SETUP
+*****************************/
+
+// Show all databases
+show dbs;
+
+// Create/switch to a database
+use personal;
+use bookstoredb;
+use inventory;
+
+// Show current database
+db;
+
+// Help commands
+help;
+db.help();
+
+// Create a collection
+db.createCollection("students");
+db.createCollection("furniture");
+
+// Show collections in current database
+show collections;
+
+// Rename a collection
+db.students.renameCollection("student");
+
+/*****************************
+2. INSERTING DOCUMENTS
+*****************************/
+
+// Insert single document
+db.students.insertOne({ 
+    name: "ali", 
+    city: "karachi", 
+    age: 23 
+});
+
+// Insert multiple documents
+db.students.insertMany([
+    { name: "ali", city: "karachi", age: 27 },
+    { name: "asim", city: "lahore", age: 21 }
+]);
+
+// Insert into furniture collection (from lab manual)
+db.furniture.insertOne({
+    name: "Bed",
+    colour: "Brown",
+    dimensions: [32, 90]
+});
+
+db.furniture.insertMany([
+    {
+        name: "Table",
+        colour: "Brown",
+        dimensions: [12, 18]
+    },
+    {
+        name: "Chair",
+        colour: "Brown",
+        dimensions: [12, 18]
+    },
+    {
+        name: "Chair",
+        colour: "Ivory",
+        dimensions: [32, 90]
+    }
+]);
+
+/*****************************
+3. QUERYING DOCUMENTS (FIND)
+*****************************/
+
+// Find all documents in a collection
+db.students.find();
+db.furniture.find();
+
+// Find with specific field value (EQUALS)
+// Equivalent to: SELECT * FROM students WHERE city = 'karachi'
+db.students.find({ city: "karachi" });
+
+// Find with multiple conditions (AND implicitly)
+// Equivalent to: SELECT * FROM students WHERE name = 'ali' AND age = 21
+db.students.find({ name: "ali", age: 21 });
+
+// Find furniture by name
+db.furniture.find({ name: "Bed" });
+
+// Find by array element
+db.furniture.find({ dimensions: [32, 90] });
+
+/*****************************
+4. COMPARISON OPERATORS
+*****************************/
+
+// Greater Than ($gt)
+// Equivalent to: SELECT * FROM students WHERE age > 20
+db.students.find({ age: { $gt: 20 } });
+
+// Greater Than or Equal ($gte)
+db.students.find({ age: { $gte: 21 } });
+
+// Less Than ($lt)
+// Equivalent to: SELECT * FROM students WHERE age < 25
+db.students.find({ age: { $lt: 25 } });
+
+// Less Than or Equal ($lte)
+db.students.find({ age: { $lte: 21 } });
+
+// Not Equal ($ne)
+// Equivalent to: SELECT * FROM students WHERE city != 'karachi'
+db.students.find({ city: { $ne: "karachi" } });
+
+// Find furniture where dimensions[0] > 30
+db.furniture.find({ "dimensions.0": { $gt: 30 } });
+
+/*****************************
+5. LOGICAL OPERATORS
+*****************************/
+
+// OR Operator ($or)
+// Equivalent to: SELECT * FROM students WHERE city = 'karachi' OR city = 'lahore'
+db.students.find({
+    $or: [
+        { city: "karachi" },
+        { city: "lahore" }
+    ]
+});
+
+// AND Operator ($and)
+// Equivalent to: WHERE colour = 'Brown' AND name = 'Chair'
+db.furniture.find({
+    $and: [
+        { colour: "Brown" },
+        { name: "Chair" }
+    ]
+});
+
+// Combining AND and OR
+// Find furniture where colour is brown, and name is either table or chair
+db.furniture.find({
+    $and: [
+        { colour: "Brown" },
+        { 
+            $or: [
+                { name: "Table" },
+                { name: "Chair" }
+            ]
+        }
+    ]
+});
+
+// IN Operator ($in)
+// Equivalent to: SELECT * FROM students WHERE id IN (101, 102, 103)
+db.students.find({
+    _id: { $in: [ObjectId("value1"), ObjectId("value2")] }
+});
+
+/*****************************
+6. UPDATING DOCUMENTS
+*****************************/
+
+// Update single document
+// Equivalent to: UPDATE students SET city = 'Lahore' WHERE name = 'ali'
+db.students.updateOne(
+    { name: "ali" },
+    { $set: { city: "Lahore" } }
+);
+
+// Update furniture colour
+db.furniture.updateOne(
+    { dimensions: [32, 90] },
+    { $set: { colour: "Ivory" } }
+);
+
+// Update multiple documents
+db.furniture.updateMany(
+    { colour: "Brown" },
+    { $set: { colour: "Dark Brown" } }
+);
+
+// Increment values ($inc)
+// Increase all books rating by 1
+db.books.updateMany(
+    {},
+    { $inc: { rating: 1 } }
+);
+
+// Decrease publication year by 5 for specific book
+db.books.updateOne(
+    { title: "1984" },
+    { $inc: { publication_year: -5 } }
+);
+
+/*****************************
+7. DELETING DOCUMENTS
+*****************************/
+
+// Delete single document
+// Equivalent to: DELETE FROM students WHERE name = 'ali'
+db.students.deleteOne({ name: "ali" });
+
+// Delete furniture where name is Chair
+db.furniture.deleteOne({ name: "Chair" });
+
+// Delete multiple documents
+db.furniture.deleteMany({ dimensions: [12, 18] });
+
+// Delete courses where studentsEnrolled array includes 2 OR instructor is "Dr. Smith"
+db.courses.deleteMany({
+    $or: [
+        { studentsEnrolled: { $in: [2] } },
+        { instructor: "Dr. Smith" }
+    ]
+});
+
+/*****************************
+8. AGGREGATION
+*****************************/
+
+// Count documents
+// Equivalent to: SELECT COUNT(*) FROM students
+db.students.countDocuments();
+
+// Count with filter
+db.students.countDocuments({ city: "karachi" });
+
+// Group by city and count
+db.students.aggregate([
+    { $group: { 
+        _id: "$city", 
+        total: { $sum: 1 } 
+    }}
+]);
+
+// Group by city and calculate average age
+db.students.aggregate([
+    { $group: { 
+        _id: "$city", 
+        avgAge: { $avg: "$age" } 
+    }}
+]);
+
+// Find average publication year of all books
+db.books.aggregate([
+    { $group: { 
+        _id: null, 
+        avgPublicationYear: { $avg: "$publication_year" } 
+    }}
+]);
+
+// Group by genre and count books
+db.books.aggregate([
+    { $group: { 
+        _id: "$genre", 
+        count: { $sum: 1 } 
+    }}
+]);
+
+// Sort genres by count in descending order
+db.books.aggregate([
+    { $group: { 
+        _id: "$genre", 
+        count: { $sum: 1 } 
+    }},
+    { $sort: { count: -1 } }
+]);
+
+/*****************************
+9. SORTING, LIMITING, SKIPPING
+*****************************/
+
+// Sorting (1 = ascending, -1 = descending)
+// Equivalent to: SELECT * FROM students ORDER BY name ASC
+db.students.find().sort({ name: 1 });
+
+// Sort by publication year ascending
+db.books.find().sort({ publication_year: 1 });
+
+// Sort by publication year descending and title ascending
+db.books.find().sort({ publication_year: -1, title: 1 });
+
+// Limiting results
+// Equivalent to: SELECT * FROM students LIMIT 5
+db.students.find().limit(5);
+db.books.find().limit(5);
+
+// Skipping results
+db.books.find().skip(3);
+
+// Pagination (skip 5, limit 5 = second page with 5 items per page)
+db.books.find().skip(5).limit(5);
+
+/*****************************
+10. PROJECTION (SELECTING FIELDS)
+*****************************/
+
+// Return only specific fields (1 = include, 0 = exclude)
+// Equivalent to: SELECT title, author FROM books
+db.books.find({}, { title: 1, author: 1, _id: 0 });
+
+// Exclude specific fields
+db.books.find({}, { ISBN: 0 });
+
+// Include some, exclude others
+db.students.find({}, { name: 1, age: 1, _id: 0 });
+
+/*****************************
+11. REGULAR EXPRESSIONS
+*****************************/
+
+// Find names starting with 'A'
+// Equivalent to: SELECT * FROM students WHERE name LIKE 'A%'
+db.students.find({ name: /^a/ });
+db.students.find({ name: /^A/i }); // Case insensitive
+
+// Find books with titles starting with "The"
+db.books.find({ 
+    title: { 
+        $regex: "^The", 
+        $options: "i" 
+    } 
+});
+
+// Find authors with last name "Lee"
+db.books.find({ 
+    author: { 
+        $regex: "Lee$", 
+        $options: "i" 
+    } 
+});
+
+/*****************************
+12. TEXT SEARCH (requires text index)
+*****************************/
+
+// Create text index (one-time setup)
+db.books.createIndex({ title: "text", author: "text" });
+
+// Search for books with word "Road" in title or author
+db.books.find({ 
+    $text: { 
+        $search: "Road" 
+    } 
+});
+
+/*****************************
+13. FINDONE AND SPECIAL OPERATIONS
+*****************************/
+
+// Find single document
+db.students.findOne({ city: "karachi" });
+
+// Find and update in one operation
+db.books.findOneAndUpdate(
+    { title: "The Great Gatsby" },
+    { $set: { genre: "Classic" } },
+    { returnNewDocument: true }
+);
+
+// Find and delete in one operation
+db.books.findOneAndDelete({ 
+    title: "The Catcher in the Rye" 
+});
+
+/*****************************
+14. CLEANUP OPERATIONS
+*****************************/
+
+// Drop a collection
+db.students.drop();
+db.furniture.drop();
+
+// Drop current database
+db.dropDatabase();
+
+// Verify collection is dropped
+show collections;
+
+/*****************************
+15. LAB TASK IMPLEMENTATION
+   SchoolDB Example
+*****************************/
+
+// Task 1: Create database
+use SchoolDB;
+
+// Task 2: Create collections
+db.createCollection("Students");
+db.createCollection("Courses");
+
+// Task 3: Insert into Students
+db.Students.insertMany([
+    { name: "Alice", age: 21, math: 85, science: 88 },
+    { name: "Bob", age: 22, math: 78, science: 82 },
+    { name: "Charlie", age: 20, math: 92, science: 85 },
+    { name: "Daisy", age: 23, math: 88, science: 79 },
+    { name: "Eve", age: 21, math: 76, science: 91 }
+]);
+
+// Task 4: Insert into Courses
+db.Courses.insertMany([
+    { courseName: "Mathematics", instructor: "Dr. Smith", studentsEnrolled: [1, 2, 3] },
+    { courseName: "Physics", instructor: "Dr. Adams", studentsEnrolled: [2, 3, 4] },
+    { courseName: "Chemistry", instructor: "Dr. Brown", studentsEnrolled: [1, 4, 5] }
+]);
+
+// Task 5a: findOne - math >= 85 AND age < 22
+db.Students.findOne({
+    $and: [
+        { math: { $gte: 85 } },
+        { age: { $lt: 22 } }
+    ]
+});
+
+// Task 5b: findOne - studentsEnrolled includes 3 AND instructor is "Dr. Adams"
+db.Courses.findOne({
+    $and: [
+        { studentsEnrolled: { $in: [3] } },
+        { instructor: "Dr. Adams" }
+    ]
+});
+
+// Task 6a: find - math >= 80 AND science < 90
+db.Students.find({
+    $and: [
+        { math: { $gte: 80 } },
+        { science: { $lt: 90 } }
+    ]
+});
+
+// Task 6b: find - age < 23 OR math >= 85
+db.Students.find({
+    $or: [
+        { age: { $lt: 23 } },
+        { math: { $gte: 85 } }
+    ]
+});
+
+// Task 6c: find - science >= 80 AND (math < 75 OR age > 22)
+db.Students.find({
+    $and: [
+        { science: { $gte: 80 } },
+        { 
+            $or: [
+                { math: { $lt: 75 } },
+                { age: { $gt: 22 } }
+            ]
+        }
+    ]
+});
+
+// Task 7: updateOne - Increase science score for Bob where math >= 75
+db.Students.updateOne(
+    { 
+        $and: [
+            { name: "Bob" },
+            { math: { $gte: 75 } }
+        ]
+    },
+    { $inc: { science: 5 } }
+);
+
+// Task 8: updateMany - Increase math by 5 where science < 80 AND age > 22
+db.Students.updateMany(
+    { 
+        $and: [
+            { science: { $lt: 80 } },
+            { age: { $gt: 22 } }
+        ]
+    },
+    { $inc: { math: 5 } }
+);
+
+// Task 9: deleteOne - Remove Daisy where science < 80
+db.Students.deleteOne({
+    $and: [
+        { name: "Daisy" },
+        { science: { $lt: 80 } }
+    ]
+});
+
+// Task 10: deleteMany - Remove courses where studentsEnrolled includes 2 OR instructor is "Dr. Smith"
+db.Courses.deleteMany({
+    $or: [
+        { studentsEnrolled: { $in: [2] } },
+        { instructor: "Dr. Smith" }
+    ]
+});
+
+// Task 11: Drop Students collection
+db.Students.drop();
+
+// Task 12: Drop Courses collection
+db.Courses.drop();
+
+// Task 13: Drop SchoolDB database
+use SchoolDB;
+db.dropDatabase();
+
+/*****************************
+16. BOOKSTORE EXAMPLE (from lab manual)
+*****************************/
+
+use bookstoredb;
+
+// Create books collection and insert data
+db.books.insertMany([
+    {
+        title: "A tale of two cities",
+        author: "Charles Dickens",
+        genre: ["historical", "fiction"]
+    },
+    {
+        title: "The Alchemist",
+        author: "Paulo Coelho",
+        genre: ["fantasy"]
+    },
+    {
+        title: "Harry Potter and the Philosopher's Stone",
+        author: "J. K. Rowling",
+        genre: ["children fantasy"]
+    },
+    {
+        title: "1984",
+        author: "George Orwell",
+        genre: ["dystopian", "fiction"],
+        publication_year: 1949,
+        rating: 4.5
+    },
+    {
+        title: "The Great Gatsby",
+        author: "F. Scott Fitzgerald",
+        genre: ["classic", "fiction"],
+        publication_year: 1925,
+        rating: 4.0
+    }
+]);
+
+// Example queries for books
+db.books.find({ genre: { $in: ["fiction"] } });
+db.books.find({ publication_year: { $gt: 1900, $lt: 2000 } });
+db.books.find().sort({ publication_year: -1 });
+db.books.find({}, { title: 1, author: 1, _id: 0 });
+
+/*****************************
+17. SCHEMA DESIGN EXAMPLE
+   Blog/Website Schema
+*****************************/
+
+// MongoDB Schema Design for Blog (from lab manual)
+db.posts.insertOne({
+    _id: POST_ID,
+    title: "MongoDB Overview",
+    description: "MongoDB is no SQL database",
+    by: "tutorials point",
+    url: "http://www.tutorialspoint.com",
+    tags: ["mongodb", "database", "NoSQL"],
+    likes: 100,
+    comments: [
+        {
+            user: "user1",
+            message: "My first comment",
+            dateCreated: new Date("2013-11-10"),
+            like: 0
+        },
+        {
+            user: "user2",
+            message: "My second comment",
+            dateCreated: new Date("2013-11-11"),
+            like: 5
+        }
+    ]
+});
